@@ -16,6 +16,8 @@ type contextKey string
 const (
 	// CorrelationIDKey is the context key for correlation ID
 	CorrelationIDKey contextKey = "correlation_id"
+	// RequestIDKey is the context key for request ID
+	RequestIDKey contextKey = "request_id"
 )
 
 // Logger wraps slog.Logger with correlation ID support
@@ -49,7 +51,7 @@ func New(cfg Config) *Logger {
 	}
 }
 
-// FromContext extracts a logger with correlation ID from context
+// FromContext extracts a logger with correlation ID and request ID from context
 func FromContext(ctx context.Context) *Logger {
 	logger := slog.Default()
 
@@ -60,10 +62,17 @@ func FromContext(ctx context.Context) *Logger {
 		}
 	}
 
+	// Add request ID to logger context if present
+	if requestID := ctx.Value(RequestIDKey); requestID != nil {
+		if id, ok := requestID.(string); ok {
+			logger = logger.With(slog.String("request_id", id))
+		}
+	}
+
 	return &Logger{Logger: logger}
 }
 
-// WithContext returns a logger with correlation ID from context
+// WithContext returns a logger with correlation ID and request ID from context
 func (l *Logger) WithContext(ctx context.Context) *Logger {
 	logger := l.Logger
 
@@ -71,6 +80,13 @@ func (l *Logger) WithContext(ctx context.Context) *Logger {
 	if correlationID := ctx.Value(CorrelationIDKey); correlationID != nil {
 		if id, ok := correlationID.(string); ok {
 			logger = logger.With(slog.String("correlation_id", id))
+		}
+	}
+
+	// Add request ID to logger context if present
+	if requestID := ctx.Value(RequestIDKey); requestID != nil {
+		if id, ok := requestID.(string); ok {
+			logger = logger.With(slog.String("request_id", id))
 		}
 	}
 
@@ -114,6 +130,29 @@ func GetCorrelationID(ctx context.Context) string {
 	}
 	if correlationID := ctx.Value(CorrelationIDKey); correlationID != nil {
 		if id, ok := correlationID.(string); ok {
+			return id
+		}
+	}
+	return ""
+}
+
+// GenerateRequestID generates a new request ID
+func GenerateRequestID() string {
+	return uuid.New().String()
+}
+
+// NewContextWithRequestID creates a new context with request ID
+func NewContextWithRequestID(ctx context.Context, requestID string) context.Context {
+	return context.WithValue(ctx, RequestIDKey, requestID)
+}
+
+// GetRequestID extracts the request ID from context
+func GetRequestID(ctx context.Context) string {
+	if ctx == nil {
+		return ""
+	}
+	if requestID := ctx.Value(RequestIDKey); requestID != nil {
+		if id, ok := requestID.(string); ok {
 			return id
 		}
 	}
