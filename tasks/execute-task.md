@@ -101,6 +101,7 @@ Provide summary of work done:
 10. Run `make run` - server starts
 11. Test via browser: `http://localhost:8080/` - renders correctly
 12. Update PRD: mark all US-003 criteria as `[x]`
+13. Commit the work using use_skill commit method
 
 **Output:** US-003 complete, all tests passing, application verified
 
