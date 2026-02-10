@@ -229,91 +229,91 @@ A production-ready Go project starter kit that follows idiomatic Go practices, p
 **Description:** As a developer, I need rate limiting so I can protect endpoints from abuse.
 
 **Acceptance Criteria:**
-- [ ] Rate limiter middleware using in-memory map
-- [ ] Rate limit configured via `RATE_LIMIT_REQUESTS_PER_WINDOW` (default: 100)
-- [ ] Time window configured via `RATE_LIMIT_WINDOW_SECONDS` (default: 60)
-- [ ] Rate limits per IP address
-- [ ] Returns 429 status when limit exceeded
-- [ ] Includes Retry-After header
-- [ ] Sliding window or token bucket algorithm
-- [ ] Integration test for rate limiting enforcement
-- [ ] Integration test for 429 status code on limit exceeded
-- [ ] Integration test for Retry-After header presence
-- [ ] Unit test for sliding window/token bucket algorithm
-- [ ] Edge case: Boundary condition - exactly at limit
-- [ ] Edge case: Boundary condition - limit + 1 request
-- [ ] Edge case: Multiple IPs from same client (proxy)
-- [ ] Edge case: Very high request volume
-- [ ] Edge case: Rate limit reset timing
-- [ ] Edge case: IPv6 address handling
-- [ ] Edge case: Concurrent requests from same IP
+- [x] Rate limiter middleware using in-memory map
+- [x] Rate limit configured via `RATE_LIMIT_REQUESTS_PER_WINDOW` (default: 100)
+- [x] Time window configured via `RATE_LIMIT_WINDOW_SECONDS` (default: 60)
+- [x] Rate limits per IP address
+- [x] Returns 429 status when limit exceeded
+- [x] Includes Retry-After header
+- [x] Sliding window or token bucket algorithm
+- [x] Integration test for rate limiting enforcement
+- [x] Integration test for 429 status code on limit exceeded
+- [x] Integration test for Retry-After header presence
+- [x] Unit test for sliding window/token bucket algorithm
+- [x] Edge case: Boundary condition - exactly at limit
+- [x] Edge case: Boundary condition - limit + 1 request
+- [x] Edge case: Multiple IPs from same client (proxy)
+- [x] Edge case: Very high request volume
+- [x] Edge case: Rate limit reset timing
+- [x] Edge case: IPv6 address handling
+- [x] Edge case: Concurrent requests from same IP
 
 ### US-011: Set up SQLite database support
 **Description:** As a developer, I need SQLite database support so I can persist data without external dependencies.
 
 **Acceptance Criteria:**
-- [ ] Use stdlib database/sql with modernc.org/sqlite driver
-- [ ] Create database connection pool with config
-- [ ] Database file path configured via `SQLITE_DB_FILE` (default: "./app.db")
-- [ ] Connection pool configured via: `SQLITE_MAX_OPEN_CONNECTIONS` (default: 25), `SQLITE_MAX_IDLE_CONNECTIONS` (default: 25), `SQLITE_CONNECTION_MAX_LIFETIME_SECONDS` (default: 300)
-- [ ] Implement database migration system
-- [ ] Example model with CRUD operations
-- [ ] Database connection tests pass
-- [ ] Connection handles graceful shutdown
-- [ ] Negative case: Connection pool exhaustion handled
-- [ ] Negative case: Invalid `SQLITE_DB_FILE` path handled
-- [ ] Negative case: Corrupted database file handled
-- [ ] Edge case: Very large query results
-- [ ] Edge case: Concurrent database operations
-- [ ] Edge case: Migration with very long SQL statements
-- [ ] Edge case: Database file permissions
-- [ ] Edge case: Database connection during graceful shutdown
+- [x] Use stdlib database/sql with modernc.org/sqlite driver
+- [x] Create database connection pool with config
+- [x] Database file path configured via `SQLITE_DB_FILE` (default: "./app.db")
+- [x] Connection pool configured via: `SQLITE_MAX_OPEN_CONNECTIONS` (default: 25), `SQLITE_MAX_IDLE_CONNECTIONS` (default: 25), `SQLITE_CONNECTION_MAX_LIFETIME_SECONDS` (default: 300)
+- [x] Implement database migration system
+- [x] Example model with CRUD operations
+- [x] Database connection tests pass
+- [x] Connection handles graceful shutdown
+- [x] Negative case: Connection pool exhaustion handled
+- [x] Negative case: Invalid `SQLITE_DB_FILE` path handled
+- [x] Negative case: Corrupted database file handled
+- [x] Edge case: Very large query results
+- [x] Edge case: Concurrent database operations
+- [x] Edge case: Migration with very long SQL statements
+- [x] Edge case: Database file permissions
+- [x] Edge case: Database connection during graceful shutdown
 
 ### US-012: Implement health check endpoints
 **Description:** As a developer, I need Kubernetes-style health endpoints so my deployment is monitorable.
 
 **Acceptance Criteria:**
-- [ ] GET /healthz returns 200 with basic health info
-- [ ] GET /livez returns 200 if app is running
-- [ ] GET /readyz returns 200 if dependencies are ready
-- [ ] Health checks include database connectivity
-- [ ] Endpoints return JSON with status field
-- [ ] Endpoints accessible without authentication
-- [ ] Integration test for /healthz endpoint (200 status, JSON response)
-- [ ] Integration test for /livez endpoint (200 status)
-- [ ] Integration test for /readyz endpoint with database connectivity
-- [ ] Unit test for JSON response structure validation
-- [ ] Integration test for endpoint accessibility without auth
-- [ ] Negative case: /readyz returns 503 when database unavailable
-- [ ] Negative case: Service unavailable when app not responding
-- [ ] Edge case: Health checks under high load
-- [ ] Edge case: Database reconnect attempts in health checks
-- [ ] Edge case: Multiple simultaneous health check requests
-- [ ] Edge case: Health check during graceful shutdown
+- [x] GET /healthz returns 200 with basic health info
+- [x] GET /livez returns 200 if app is running
+- [x] GET /readyz returns 200 if dependencies are ready
+- [x] Health checks include database connectivity
+- [x] Endpoints return JSON with status field
+- [x] Endpoints accessible without authentication
+- [x] Integration test for /healthz endpoint (200 status, JSON response)
+- [x] Integration test for /livez endpoint (200 status)
+- [x] Integration test for /readyz endpoint with database connectivity
+- [x] Unit test for JSON response structure validation
+- [x] Integration test for endpoint accessibility without auth
+- [x] Negative case: /readyz returns 503 when database unavailable
+- [x] Negative case: Service unavailable when app not responding
+- [x] Edge case: Health checks under high load
+- [x] Edge case: Database reconnect attempts in health checks
+- [x] Edge case: Multiple simultaneous health check requests
+- [x] Edge case: Health check during graceful shutdown
 
 ### US-013: Add session-based authentication for HTML
 **Description:** As a developer, I need session authentication for HTML pages so users can log in securely.
 
 **Acceptance Criteria:**
-- [ ] Implement session middleware using secure cookie
-- [ ] Session storage using in-memory (or SQLite table for production)
-- [ ] Login handler validates credentials
-- [ ] Session middleware protects HTML routes
-- [ ] Logout handler clears session
-- [ ] Session is secure (HTTP-only, Secure, SameSite)
-- [ ] Configurable via environment: `SESSION_COOKIE_SECRET`, `SESSION_COOKIE_NAME` (default: "session"), `SESSION_MAX_AGE_SECONDS` (default: 3600), `SESSION_COOKIE_HTTP_ONLY` (default: true), `SESSION_COOKIE_SECURE` (default: true in production), `SESSION_COOKIE_SAMESITE` (default: "Lax")
-- [ ] Integration test for session creation on login
-- [ ] Integration test for session validation in middleware
-- [ ] Integration test for session clearing on logout
-- [ ] Unit test for secure cookie attributes (HTTP-only, Secure, SameSite)
-- [ ] Negative case: Login with invalid credentials fails
-- [ ] Negative case: Session with invalid token rejected
-- [ ] Negative case: Corrupted session data handled gracefully
-- [ ] Negative case: Session cookie tampering detected
-- [ ] Edge case: Very long session cookie values
-- [ ] Edge case: Multiple concurrent sessions for same user
-- [ ] Edge case: Session expiry exactly at request time
-- [ ] Edge case: Session storage with maximum capacity
+- [x] Implement session middleware using secure cookie
+- [x] Session storage using in-memory (or SQLite table for production)
+- [x] Login handler validates credentials
+- [x] Session middleware protects HTML routes
+- [x] Logout handler clears session
+- [x] Session is secure (HTTP-only, Secure, SameSite)
+- [x] Configurable via environment: `SESSION_COOKIE_SECRET`, `SESSION_COOKIE_NAME` (default: "session"), `SESSION_MAX_AGE_SECONDS` (default: 3600), `SESSION_COOKIE_HTTP_ONLY` (default: true), `SESSION_COOKIE_SECURE` (default: true in production), `SESSION_COOKIE_SAMESITE` (default: "Lax")
+- [x] Integration test for session creation on login
+- [x] Integration test for session validation in middleware
+- [x] Integration test for session clearing on logout
+- [x] Unit test for secure cookie attributes (HTTP-only, Secure, SameSite)
+- [x] Negative case: Login with invalid credentials fails
+- [x] Negative case: Session with invalid token rejected
+- [x] Negative case: Corrupted session data handled gracefully
+- [x] Negative case: Session cookie tampering detected
+- [x] Edge case: Very long session cookie values
+- [x] Edge case: Multiple concurrent sessions for same user
+- [x] Edge case: Session expiry exactly at request time
+- [x] Edge case: Session storage with maximum capacity
 
 ### US-014: Add JWT authentication for API
 **Description:** As a developer, I need JWT authentication for API endpoints so stateless auth is available.
