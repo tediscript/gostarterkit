@@ -209,21 +209,21 @@ A production-ready Go project starter kit that follows idiomatic Go practices, p
 **Description:** As a developer, I need input validation helpers so I can ensure data integrity.
 
 **Acceptance Criteria:**
-- [ ] Validation functions for common types (email, UUID, length)
-- [ ] Struct tag-based validation or fluent builder pattern
-- [ ] Helper function returns errors with field names
-- [ ] Validation middleware example
-- [ ] Validation errors are user-friendly
-- [ ] Unit tests for validation functions
-- [ ] Negative case: Empty string validation
-- [ ] Negative case: Invalid email format rejected
-- [ ] Negative case: Invalid UUID format rejected
-- [ ] Negative case: Length exceeding maximum rejected
-- [ ] Edge case: Validation at exact length boundary
-- [ ] Edge case: Validation with unicode/special characters
-- [ ] Edge case: Very long input strings
-- [ ] Edge case: Null/undefined values in validation
-- [ ] Edge case: Multiple validation errors aggregated
+- [x] Validation functions for common types (email, UUID, length)
+- [x] Struct tag-based validation or fluent builder pattern
+- [x] Helper function returns errors with field names
+- [x] Validation middleware example
+- [x] Validation errors are user-friendly
+- [x] Unit tests for validation functions
+- [x] Negative case: Empty string validation
+- [x] Negative case: Invalid email format rejected
+- [x] Negative case: Invalid UUID format rejected
+- [x] Negative case: Length exceeding maximum rejected
+- [x] Edge case: Validation at exact length boundary
+- [x] Edge case: Validation with unicode/special characters
+- [x] Edge case: Very long input strings
+- [x] Edge case: Null/undefined values in validation
+- [x] Edge case: Multiple validation errors aggregated
 
 ### US-010: Add rate limiting middleware
 **Description:** As a developer, I need rate limiting so I can protect endpoints from abuse.
