@@ -3,6 +3,7 @@ package middlewares
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -409,6 +410,347 @@ func TestResponseWriter(t *testing.T) {
 	}
 }
 
+func TestRequestIDMiddleware(t *testing.T) {
+	tests := []struct {
+		name            string
+		inputHeader     string
+		expectHeader    bool
+		expectGenerated bool
+	}{
+		{
+			name:            "no request ID header generates new ID",
+			inputHeader:     "",
+			expectHeader:    true,
+			expectGenerated: true,
+		},
+		{
+			name:            "existing request ID is preserved",
+			inputHeader:     "existing-request-id",
+			expectHeader:    true,
+			expectGenerated: false,
+		},
+		{
+			name:            "empty request ID header generates new ID",
+			inputHeader:     "",
+			expectHeader:    true,
+			expectGenerated: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create test handler that checks context
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requestID := logger.GetRequestID(r.Context())
+
+				if !tt.expectHeader && requestID != "" {
+					t.Errorf("Expected no request ID, got: %s", requestID)
+				}
+				if tt.expectHeader && requestID == "" {
+					t.Error("Expected request ID to be set")
+				}
+				if tt.expectGenerated && requestID == tt.inputHeader {
+					t.Error("Expected generated request ID, got input header")
+				}
+				if !tt.expectGenerated && requestID != tt.inputHeader {
+					t.Errorf("Expected preserved request ID %s, got %s", tt.inputHeader, requestID)
+				}
+
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte("OK"))
+			})
+
+			// Apply middleware
+			middleware := RequestIDMiddleware(handler)
+
+			// Create request
+			req := httptest.NewRequest("GET", "/test", nil)
+			if tt.inputHeader != "" {
+				req.Header.Set("X-Request-ID", tt.inputHeader)
+			}
+
+			// Execute request
+			rr := httptest.NewRecorder()
+			middleware.ServeHTTP(rr, req)
+
+			// Check response header
+			responseRequestID := rr.Header().Get("X-Request-ID")
+			if !tt.expectHeader && responseRequestID != "" {
+				t.Errorf("Expected no request ID in response, got: %s", responseRequestID)
+			}
+			if tt.expectHeader && responseRequestID == "" {
+				t.Error("Expected request ID in response header")
+			}
+			if tt.expectGenerated && responseRequestID == tt.inputHeader {
+				t.Error("Expected generated request ID in response, got input header")
+			}
+			if !tt.expectGenerated && responseRequestID != tt.inputHeader {
+				t.Errorf("Expected preserved request ID %s in response, got %s", tt.inputHeader, responseRequestID)
+			}
+		})
+	}
+}
+
+func TestRequestIDMiddlewareWithLogging(t *testing.T) {
+	// Capture log output
+	var logBuf bytes.Buffer
+
+	// Initialize logger
+	cfg := logger.Config{
+		Level:       slog.LevelInfo,
+		Format:      "json",
+		Output:      &logBuf,
+		ErrorOutput: &logBuf,
+	}
+	log := logger.New(cfg)
+	logger.SetDefault(log)
+
+	// Create test handler
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Log something in handler
+		logger.InfoCtx(r.Context(), "Handler processing request")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
+
+	// Apply both middlewares
+	middleware := RequestIDMiddleware(LoggingMiddleware(handler))
+
+	// Create request with request ID
+	requestID := "test-request-id-123"
+	req := httptest.NewRequest("GET", "/test", nil)
+	req.Header.Set("X-Request-ID", requestID)
+
+	// Execute request
+	rr := httptest.NewRecorder()
+	middleware.ServeHTTP(rr, req)
+
+	// Check log output contains request ID
+	logOutput := logBuf.String()
+	if !strings.Contains(logOutput, requestID) {
+		t.Errorf("Expected request ID %s in log output, got: %s", requestID, logOutput)
+	}
+
+	// Verify request ID is in response header
+	responseID := rr.Header().Get("X-Request-ID")
+	if responseID != requestID {
+		t.Errorf("Expected request ID %s in response header, got %s", requestID, responseID)
+	}
+}
+
+func TestRequestIDMiddlewareMalformedUUID(t *testing.T) {
+	// Malformed UUID should still be preserved (middleware doesn't validate format)
+	malformedUUID := "not-a-valid-uuid"
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestID := logger.GetRequestID(r.Context())
+		if requestID != malformedUUID {
+			t.Errorf("Expected malformed UUID to be preserved, got: %s", requestID)
+		}
+		w.WriteHeader(http.StatusOK)
+	})
+
+	middleware := RequestIDMiddleware(handler)
+
+	req := httptest.NewRequest("GET", "/test", nil)
+	req.Header.Set("X-Request-ID", malformedUUID)
+
+	rr := httptest.NewRecorder()
+	middleware.ServeHTTP(rr, req)
+
+	responseID := rr.Header().Get("X-Request-ID")
+	if responseID != malformedUUID {
+		t.Errorf("Expected malformed UUID in response, got: %s", responseID)
+	}
+}
+
+func TestRequestIDMiddlewareEmptyOrNull(t *testing.T) {
+	tests := []struct {
+		name  string
+		value string
+	}{
+		{"empty string", ""},
+		{"whitespace only", "   "},
+		{"null-like", "null"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requestID := logger.GetRequestID(r.Context())
+				// Should generate a new UUID when empty/null
+				if requestID == "" {
+					t.Error("Expected generated request ID, got empty")
+				}
+				if tt.value != "" && requestID == tt.value {
+					t.Errorf("Expected generated request ID, got input: %s", requestID)
+				}
+				w.WriteHeader(http.StatusOK)
+			})
+
+			middleware := RequestIDMiddleware(handler)
+
+			req := httptest.NewRequest("GET", "/test", nil)
+			if tt.value != "" {
+				req.Header.Set("X-Request-ID", tt.value)
+			}
+
+			rr := httptest.NewRecorder()
+			middleware.ServeHTTP(rr, req)
+
+			responseID := rr.Header().Get("X-Request-ID")
+			if responseID == "" {
+				t.Error("Expected request ID in response, got empty")
+			}
+			if tt.value != "" && responseID == tt.value {
+				t.Errorf("Expected generated request ID in response, got input: %s", responseID)
+			}
+		})
+	}
+}
+
+func TestRequestIDMiddlewareVeryLongID(t *testing.T) {
+	// Create a very long request ID
+	longID := strings.Repeat("a", 10000)
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestID := logger.GetRequestID(r.Context())
+		if requestID != longID {
+			t.Errorf("Expected long request ID preserved, got length %d", len(requestID))
+		}
+		w.WriteHeader(http.StatusOK)
+	})
+
+	middleware := RequestIDMiddleware(handler)
+
+	req := httptest.NewRequest("GET", "/test", nil)
+	req.Header.Set("X-Request-ID", longID)
+
+	rr := httptest.NewRecorder()
+	middleware.ServeHTTP(rr, req)
+
+	responseID := rr.Header().Get("X-Request-ID")
+	if responseID != longID {
+		t.Errorf("Expected long request ID in response, got length %d", len(responseID))
+	}
+}
+
+func TestRequestIDMiddlewarePreserved(t *testing.T) {
+	tests := []struct {
+		name string
+		id   string
+	}{
+		{"UUID format", "550e8400-e29b-41d4-a716-446655440000"},
+		{"ID with dashes", "test-id-with-dashes"},
+		{"ID with underscores", "test_id_with_underscores"},
+		{"ID with dots", "test.id.with.dots"},
+		{"ID with numbers", "req-123-456-789"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requestID := logger.GetRequestID(r.Context())
+				if requestID != tt.id {
+					t.Errorf("Expected request ID %s, got %s", tt.id, requestID)
+				}
+				w.WriteHeader(http.StatusOK)
+			})
+
+			middleware := RequestIDMiddleware(handler)
+
+			req := httptest.NewRequest("GET", "/test", nil)
+			req.Header.Set("X-Request-ID", tt.id)
+
+			rr := httptest.NewRecorder()
+			middleware.ServeHTTP(rr, req)
+
+			responseID := rr.Header().Get("X-Request-ID")
+			if responseID != tt.id {
+				t.Errorf("Expected request ID %s in response, got %s", tt.id, responseID)
+			}
+		})
+	}
+}
+
+func TestRequestIDMiddlewareConcurrentRequests(t *testing.T) {
+	// Test multiple concurrent requests with different IDs
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestID := logger.GetRequestID(r.Context())
+		w.Write([]byte(requestID))
+	})
+
+	middleware := RequestIDMiddleware(handler)
+
+	done := make(chan bool, 3)
+
+	// Launch 3 concurrent requests
+	for i := 0; i < 3; i++ {
+		go func(index int) {
+			req := httptest.NewRequest("GET", "/test", nil)
+			req.Header.Set("X-Request-ID", fmt.Sprintf("req-%d", index))
+
+			rr := httptest.NewRecorder()
+			middleware.ServeHTTP(rr, req)
+
+			responseBody := rr.Body.String()
+			expectedID := fmt.Sprintf("req-%d", index)
+			if responseBody != expectedID {
+				t.Errorf("Expected request ID %s, got %s", expectedID, responseBody)
+			}
+
+			responseID := rr.Header().Get("X-Request-ID")
+			if responseID != expectedID {
+				t.Errorf("Expected request ID %s in header, got %s", expectedID, responseID)
+			}
+
+			done <- true
+		}(i)
+	}
+
+	// Wait for all requests to complete
+	for i := 0; i < 3; i++ {
+		<-done
+	}
+}
+
+func TestRequestIDMiddlewareSpecialCharacters(t *testing.T) {
+	tests := []struct {
+		name string
+		id   string
+	}{
+		{"ID with unicode", "test-id-αβγ"},
+		{"ID with emoji", "test-id-🎉"},
+		{"ID with slashes", "test/id/with/slashes"},
+		{"ID with spaces", "test id with spaces"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requestID := logger.GetRequestID(r.Context())
+				if requestID != tt.id {
+					t.Errorf("Expected request ID %s, got %s", tt.id, requestID)
+				}
+				w.WriteHeader(http.StatusOK)
+			})
+
+			middleware := RequestIDMiddleware(handler)
+
+			req := httptest.NewRequest("GET", "/test", nil)
+			req.Header.Set("X-Request-ID", tt.id)
+
+			rr := httptest.NewRecorder()
+			middleware.ServeHTTP(rr, req)
+
+			responseID := rr.Header().Get("X-Request-ID")
+			if responseID != tt.id {
+				t.Errorf("Expected request ID %s in response, got %s", tt.id, responseID)
+			}
+		})
+	}
+}
+
 func TestMiddlewareChain(t *testing.T) {
 	// Capture log output
 	var logBuf bytes.Buffer
@@ -430,17 +772,26 @@ func TestMiddlewareChain(t *testing.T) {
 		if correlationID == "" {
 			t.Error("Expected correlation ID in handler context")
 		}
+
+		// Check request ID is in context
+		requestID := logger.GetRequestID(r.Context())
+		if requestID == "" {
+			t.Error("Expected request ID in handler context")
+		}
+
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	})
 
-	// Apply middlewares in chain
-	middleware := CorrelationIDMiddleware(LoggingMiddleware(handler))
+	// Apply all middlewares in chain
+	middleware := CorrelationIDMiddleware(RequestIDMiddleware(LoggingMiddleware(handler)))
 
 	// Create request
-	correlationID := "test-chain-id"
+	correlationID := "test-correlation-id"
+	requestID := "test-request-id"
 	req := httptest.NewRequest("POST", "/api/test", nil)
 	req.Header.Set("X-Correlation-ID", correlationID)
+	req.Header.Set("X-Request-ID", requestID)
 	req.Header.Set("Content-Type", "application/json")
 
 	// Execute request
@@ -453,15 +804,24 @@ func TestMiddlewareChain(t *testing.T) {
 	}
 
 	// Check correlation ID in response
-	responseID := rr.Header().Get("X-Correlation-ID")
-	if responseID != correlationID {
-		t.Errorf("Expected correlation ID %s, got %s", correlationID, responseID)
+	responseCorrID := rr.Header().Get("X-Correlation-ID")
+	if responseCorrID != correlationID {
+		t.Errorf("Expected correlation ID %s, got %s", correlationID, responseCorrID)
+	}
+
+	// Check request ID in response
+	responseReqID := rr.Header().Get("X-Request-ID")
+	if responseReqID != requestID {
+		t.Errorf("Expected request ID %s, got %s", requestID, responseReqID)
 	}
 
 	// Check log output
 	logOutput := logBuf.String()
 	if !strings.Contains(logOutput, correlationID) {
 		t.Errorf("Expected correlation ID %s in log output", correlationID)
+	}
+	if !strings.Contains(logOutput, requestID) {
+		t.Errorf("Expected request ID %s in log output", requestID)
 	}
 	if !strings.Contains(logOutput, "POST") {
 		t.Error("Expected 'POST' in log output")
