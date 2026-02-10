@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/tediscript/gostarterkit/internal/auth"
+	"github.com/tediscript/gostarterkit/internal/middlewares"
 )
 
 // LoginPage renders the login form
@@ -118,4 +119,68 @@ func ProtectedPage(tpl *template.Template) http.HandlerFunc {
 // For this example, we accept any non-empty username and password
 func validateCredentials(username, password string) bool {
 	return username != "" && password != ""
+}
+
+// APILoginHandler handles API login requests and returns a JWT token
+func APILoginHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		JSONResponse(w, http.StatusMethodNotAllowed, map[string]string{
+			"error": "Method not allowed",
+		})
+		return
+	}
+
+	// Parse JSON body
+	var credentials struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+
+	if err := DecodeJSONBody(w, r, &credentials); err != nil {
+		ErrorResponseFunc(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Validate credentials
+	if !validateCredentials(credentials.Username, credentials.Password) {
+		ErrorResponseFunc(w, http.StatusUnauthorized, "Invalid credentials")
+		return
+	}
+
+	// Generate JWT token
+	token, err := auth.GenerateToken(credentials.Username)
+	if err != nil {
+		ErrorResponseFunc(w, http.StatusInternalServerError, "Failed to generate token")
+		return
+	}
+
+	// Return token
+	JSONResponse(w, http.StatusOK, map[string]interface{}{
+		"token":      token,
+		"expires_in": auth.GetExpirationSeconds(),
+	})
+}
+
+// APIProtectedHandler returns protected data for authenticated API users
+func APIProtectedHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		JSONResponse(w, http.StatusMethodNotAllowed, map[string]string{
+			"error": "Method not allowed",
+		})
+		return
+	}
+
+	// Get user ID from context (set by JWT middleware)
+	userID, ok := middlewares.GetUserID(r)
+	if !ok {
+		ErrorResponseFunc(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Return protected data
+	JSONResponse(w, http.StatusOK, map[string]interface{}{
+		"user_id":   userID,
+		"message":   "This is protected data",
+		"timestamp": http.TimeFormat,
+	})
 }

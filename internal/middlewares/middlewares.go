@@ -1,11 +1,13 @@
 package middlewares
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/tediscript/gostarterkit/internal/auth"
 	"github.com/tediscript/gostarterkit/internal/logger"
 )
 
@@ -110,4 +112,53 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 		rw.status = http.StatusOK
 	}
 	return rw.ResponseWriter.Write(b)
+}
+
+// Context keys for storing values in request context
+type contextKey string
+
+const (
+	UserIDContextKey contextKey = "user_id"
+)
+
+// JWTAuthMiddleware validates JWT tokens and sets user context
+func JWTAuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Get Authorization header
+		authHeader := r.Header.Get("Authorization")
+
+		// Check if Authorization header is present
+		if authHeader == "" {
+			http.Error(w, "Authorization header required", http.StatusUnauthorized)
+			return
+		}
+
+		// Extract token from "Bearer <token>" format or raw token
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		tokenString = strings.TrimSpace(tokenString)
+
+		// Validate token
+		userID, err := auth.ValidateToken(tokenString)
+		if err != nil {
+			// Return appropriate error message based on error type
+			if err == auth.ErrExpiredToken {
+				http.Error(w, "Token expired", http.StatusUnauthorized)
+			} else {
+				http.Error(w, "Invalid token", http.StatusUnauthorized)
+			}
+			return
+		}
+
+		// Set user ID in context
+		ctx := context.WithValue(r.Context(), UserIDContextKey, userID)
+
+		// Serve request with new context
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// GetUserID retrieves the user ID from the request context
+func GetUserID(r *http.Request) (string, bool) {
+	userID, ok := r.Context().Value(UserIDContextKey).(string)
+	return userID, ok
 }

@@ -186,6 +186,63 @@ Responses are in JSON format:
 }
 ```
 
+### JWT API Authentication
+
+The application provides JWT-based API authentication for stateless clients:
+
+**POST /api/login**
+
+Authenticate with username/password and receive a JWT token.
+
+Request:
+```json
+{
+  "username": "user@example.com",
+  "password": "your-password"
+}
+```
+
+Response:
+```json
+{
+  "status": "success",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "expires_in": 3600
+  }
+}
+```
+
+**GET /api/protected**
+
+Access protected data. Requires JWT token in Authorization header.
+
+Request:
+```http
+GET /api/protected
+Authorization: Bearer <your-jwt-token>
+```
+
+Response:
+```json
+{
+  "status": "success",
+  "data": {
+    "user_id": "user@example.com",
+    "message": "This is protected data",
+    "timestamp": "Mon, 02 Jan 2006 15:04:05 MST"
+  }
+}
+```
+
+Error responses follow consistent JSON format:
+
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
 ### Routing
 
 Routes are registered in `internal/routes/routes.go` using Go 1.22+ http.ServeMux with named routes. Handlers are organized by feature in `internal/handlers/`.

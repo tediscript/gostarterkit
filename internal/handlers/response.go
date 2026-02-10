@@ -115,3 +115,15 @@ func ValidationError(w http.ResponseWriter, field, message string) {
 		http.Error(w, "Failed to encode JSON response", http.StatusInternalServerError)
 	}
 }
+
+// DecodeJSONBody decodes a JSON request body into the provided struct
+func DecodeJSONBody(w http.ResponseWriter, r *http.Request, dst interface{}) error {
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(dst); err != nil {
+		return err
+	}
+
+	return nil
+}

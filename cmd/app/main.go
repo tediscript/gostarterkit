@@ -77,6 +77,12 @@ func main() {
 	)
 	auth.Initialize(cfg)
 
+	// Initialize JWT authentication
+	log.Info("Initializing JWT authentication",
+		"expiration_seconds", cfg.JWT.ExpirationSeconds,
+	)
+	auth.InitializeJWT(cfg)
+
 	// Initialize health checker
 	healthChecker := health.New(db)
 

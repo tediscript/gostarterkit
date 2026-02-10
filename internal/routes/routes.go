@@ -31,6 +31,10 @@ func Routes(mux *http.ServeMux, h *handlers.Handlers, cfg *config.Config, tpl *t
 	mux.HandleFunc("GET /api/error", h.APIError)
 	mux.HandleFunc("GET /api/data", h.APIData)
 
+	// API authentication routes (JWT)
+	mux.HandleFunc("POST /api/login", handlers.APILoginHandler)
+	mux.Handle("GET /api/protected", middlewares.JWTAuthMiddleware(http.HandlerFunc(handlers.APIProtectedHandler)))
+
 	// Create rate limit middleware with configuration
 	rateLimitMiddleware := middlewares.RateLimitMiddleware(
 		cfg.RateLimit.RequestsPerWindow,

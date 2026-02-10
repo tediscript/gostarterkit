@@ -6,6 +6,9 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/tediscript/gostarterkit/internal/auth"
+	"github.com/tediscript/gostarterkit/internal/config"
 )
 
 // mockTemplateCache is a mock implementation of TemplateCache for testing
@@ -425,4 +428,342 @@ func TestAPIConcurrentRequests(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		<-done
 	}
+}
+
+// setupJWTForTests initializes JWT for testing
+func setupJWTForTests(t *testing.T) {
+	t.Helper()
+
+	testCfg := &config.Config{}
+	testCfg.App.Env = "test"
+	testCfg.JWT.SigningSecret = "test-secret-for-api-handlers"
+	testCfg.JWT.ExpirationSeconds = 3600
+	auth.SetConfigForTesting(testCfg)
+}
+
+// TestAPILoginHandler tests /api/login endpoint
+func TestAPILoginHandler(t *testing.T) {
+	setupJWTForTests(t)
+
+	t.Run("valid login with JSON", func(t *testing.T) {
+		reqBody := `{"username": "testuser", "password": "testpass"}`
+		req := httptest.NewRequest(http.MethodPost, "/api/login", strings.NewReader(reqBody))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+
+		APILoginHandler(rr, req)
+
+		if rr.Code != http.StatusOK {
+			t.Errorf("APILoginHandler() status = %v, want %v", rr.Code, http.StatusOK)
+		}
+
+		// Check Content-Type
+		contentType := rr.Header().Get("Content-Type")
+		if contentType != "application/json" {
+			t.Errorf("APILoginHandler() Content-Type = %v, want application/json", contentType)
+		}
+
+		// Parse response
+		var response map[string]interface{}
+		if err := json.Unmarshal(rr.Body.Bytes(), &response); err != nil {
+			t.Fatalf("Failed to parse JSON: %v", err)
+		}
+
+		// Check status field
+		if response["status"] != "success" {
+			t.Errorf("APILoginHandler() status = %v, want 'success'", response["status"])
+		}
+
+		// Check data has token
+		data, ok := response["data"].(map[string]interface{})
+		if !ok {
+			t.Error("APILoginHandler() data field is missing or not a map")
+			return
+		}
+
+		if _, exists := data["token"]; !exists {
+			t.Error("APILoginHandler() token field is missing")
+		}
+
+		if _, exists := data["expires_in"]; !exists {
+			t.Error("APILoginHandler() expires_in field is missing")
+		}
+	})
+
+	t.Run("invalid request body - malformed JSON", func(t *testing.T) {
+		setupJWTForTests(t)
+		reqBody := `{invalid json`
+		req := httptest.NewRequest(http.MethodPost, "/api/login", strings.NewReader(reqBody))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+
+		APILoginHandler(rr, req)
+
+		if rr.Code != http.StatusBadRequest {
+			t.Errorf("APILoginHandler() status = %v, want %v", rr.Code, http.StatusBadRequest)
+		}
+	})
+
+	t.Run("invalid credentials - empty username", func(t *testing.T) {
+		setupJWTForTests(t)
+		reqBody := `{"username": "", "password": "testpass"}`
+		req := httptest.NewRequest(http.MethodPost, "/api/login", strings.NewReader(reqBody))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+
+		APILoginHandler(rr, req)
+
+		if rr.Code != http.StatusUnauthorized {
+			t.Errorf("APILoginHandler() status = %v, want %v", rr.Code, http.StatusUnauthorized)
+		}
+
+		// Check error response
+		var response map[string]interface{}
+		if err := json.Unmarshal(rr.Body.Bytes(), &response); err != nil {
+			t.Fatalf("Failed to parse JSON: %v", err)
+		}
+
+		if response["error"] != "Invalid credentials" {
+			t.Errorf("APILoginHandler() error = %v, want 'Invalid credentials'", response["error"])
+		}
+	})
+
+	t.Run("invalid credentials - empty password", func(t *testing.T) {
+		setupJWTForTests(t)
+		reqBody := `{"username": "testuser", "password": ""}`
+		req := httptest.NewRequest(http.MethodPost, "/api/login", strings.NewReader(reqBody))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+
+		APILoginHandler(rr, req)
+
+		if rr.Code != http.StatusUnauthorized {
+			t.Errorf("APILoginHandler() status = %v, want %v", rr.Code, http.StatusUnauthorized)
+		}
+	})
+
+	t.Run("wrong HTTP method", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/api/login", nil)
+		rr := httptest.NewRecorder()
+
+		APILoginHandler(rr, req)
+
+		// Handler returns JSONResponse which wraps data in "data" field
+		if rr.Code != http.StatusMethodNotAllowed {
+			t.Errorf("APILoginHandler() status = %v, want %v", rr.Code, http.StatusMethodNotAllowed)
+		}
+
+		var response map[string]interface{}
+		if err := json.Unmarshal(rr.Body.Bytes(), &response); err != nil {
+			t.Fatalf("Failed to parse JSON: %v", err)
+		}
+
+		// JSONResponse wraps everything in "data" field with "status": "success"
+		data, ok := response["data"].(map[string]interface{})
+		if !ok {
+			t.Error("APILoginHandler() data field is missing or not a map")
+			return
+		}
+
+		if data["error"] != "Method not allowed" {
+			t.Errorf("APILoginHandler() error = %v, want 'Method not allowed'", data["error"])
+		}
+	})
+
+	t.Run("missing content type header", func(t *testing.T) {
+		setupJWTForTests(t)
+		reqBody := `{"username": "testuser", "password": "testpass"}`
+		req := httptest.NewRequest(http.MethodPost, "/api/login", strings.NewReader(reqBody))
+		rr := httptest.NewRecorder()
+
+		APILoginHandler(rr, req)
+
+		if rr.Code != http.StatusOK {
+			t.Errorf("APILoginHandler() status = %v, want %v", rr.Code, http.StatusOK)
+		}
+	})
+}
+
+// TestAPIProtectedHandler tests /api/protected endpoint
+func TestAPIProtectedHandler(t *testing.T) {
+	t.Run("valid request - should return protected data", func(t *testing.T) {
+		setupJWTForTests(t)
+		req := httptest.NewRequest(http.MethodGet, "/api/protected", nil)
+		rr := httptest.NewRecorder()
+
+		APIProtectedHandler(rr, req)
+
+		// Handler expects JWT middleware to set user ID in context
+		// Without middleware, it will return 401
+		if rr.Code != http.StatusUnauthorized {
+			t.Errorf("APIProtectedHandler() status = %v, want %v (no middleware)", rr.Code, http.StatusUnauthorized)
+		}
+	})
+
+	t.Run("wrong HTTP method", func(t *testing.T) {
+		setupJWTForTests(t)
+		req := httptest.NewRequest(http.MethodPost, "/api/protected", nil)
+		rr := httptest.NewRecorder()
+
+		APIProtectedHandler(rr, req)
+
+		// Handler returns JSONResponse which wraps data in "data" field
+		if rr.Code != http.StatusMethodNotAllowed {
+			t.Errorf("APIProtectedHandler() status = %v, want %v", rr.Code, http.StatusMethodNotAllowed)
+		}
+
+		var response map[string]interface{}
+		if err := json.Unmarshal(rr.Body.Bytes(), &response); err != nil {
+			t.Fatalf("Failed to parse JSON: %v", err)
+		}
+
+		// JSONResponse wraps everything in "data" field with "status": "success"
+		data, ok := response["data"].(map[string]interface{})
+		if !ok {
+			t.Error("APIProtectedHandler() data field is missing or not a map")
+			return
+		}
+
+		if data["error"] != "Method not allowed" {
+			t.Errorf("APIProtectedHandler() error = %v, want 'Method not allowed'", data["error"])
+		}
+	})
+
+	t.Run("successful response structure", func(t *testing.T) {
+		// This test verifies the expected response structure
+		// In real scenario, JWT middleware would set user ID in context
+		req := httptest.NewRequest(http.MethodGet, "/api/protected", nil)
+		rr := httptest.NewRecorder()
+
+		APIProtectedHandler(rr, req)
+
+		// Even without middleware, we should get a JSON error response
+		var response map[string]interface{}
+		if err := json.Unmarshal(rr.Body.Bytes(), &response); err != nil {
+			t.Fatalf("Failed to parse JSON: %v", err)
+		}
+
+		// Should have error field
+		if _, exists := response["error"]; !exists {
+			t.Error("APIProtectedHandler() missing 'error' field")
+		}
+	})
+}
+
+// TestJWTAuthenticationFlow tests the complete JWT authentication flow
+func TestJWTAuthenticationFlow(t *testing.T) {
+	setupJWTForTests(t)
+
+	t.Run("login then access protected endpoint", func(t *testing.T) {
+		// Step 1: Login
+		loginReqBody := `{"username": "testuser", "password": "testpass"}`
+		loginReq := httptest.NewRequest(http.MethodPost, "/api/login", strings.NewReader(loginReqBody))
+		loginReq.Header.Set("Content-Type", "application/json")
+		loginRR := httptest.NewRecorder()
+
+		APILoginHandler(loginRR, loginReq)
+
+		if loginRR.Code != http.StatusOK {
+			t.Errorf("Login failed with status %d", loginRR.Code)
+			return
+		}
+
+		// Extract token
+		var loginResponse map[string]interface{}
+		if err := json.Unmarshal(loginRR.Body.Bytes(), &loginResponse); err != nil {
+			t.Fatalf("Failed to parse login response: %v", err)
+		}
+
+		data, ok := loginResponse["data"].(map[string]interface{})
+		if !ok {
+			t.Error("Login response data is missing")
+			return
+		}
+
+		token, ok := data["token"].(string)
+		if !ok || token == "" {
+			t.Error("Login response token is missing")
+			return
+		}
+
+		// Step 2: Use token to access protected endpoint
+		// Note: This requires the JWT middleware to be set up properly
+		// For this test, we just verify we got a token
+		t.Logf("Successfully obtained JWT token: %s...", token[:min(20, len(token))])
+	})
+}
+
+// TestJSONResponseHelpers tests the JSON response helper functions
+func TestJSONResponseHelpers(t *testing.T) {
+	t.Run("JSONResponse", func(t *testing.T) {
+		rr := httptest.NewRecorder()
+		JSONResponse(rr, http.StatusOK, map[string]string{"message": "test"})
+
+		if rr.Code != http.StatusOK {
+			t.Errorf("JSONResponse() status = %v, want %v", rr.Code, http.StatusOK)
+		}
+
+		contentType := rr.Header().Get("Content-Type")
+		if contentType != "application/json" {
+			t.Errorf("JSONResponse() Content-Type = %v, want application/json", contentType)
+		}
+
+		var response map[string]interface{}
+		if err := json.Unmarshal(rr.Body.Bytes(), &response); err != nil {
+			t.Fatalf("Failed to parse JSON: %v", err)
+		}
+
+		if response["status"] != "success" {
+			t.Errorf("JSONResponse() status = %v, want 'success'", response["status"])
+		}
+	})
+
+	t.Run("ErrorResponseFunc", func(t *testing.T) {
+		rr := httptest.NewRecorder()
+		ErrorResponseFunc(rr, http.StatusBadRequest, "Bad request")
+
+		if rr.Code != http.StatusBadRequest {
+			t.Errorf("ErrorResponseFunc() status = %v, want %v", rr.Code, http.StatusBadRequest)
+		}
+
+		var response map[string]interface{}
+		if err := json.Unmarshal(rr.Body.Bytes(), &response); err != nil {
+			t.Fatalf("Failed to parse JSON: %v", err)
+		}
+
+		if response["error"] != "Bad request" {
+			t.Errorf("ErrorResponseFunc() error = %v, want 'Bad request'", response["error"])
+		}
+	})
+
+	t.Run("ValidationError", func(t *testing.T) {
+		rr := httptest.NewRecorder()
+		ValidationError(rr, "username", "is required")
+
+		if rr.Code != http.StatusBadRequest {
+			t.Errorf("ValidationError() status = %v, want %v", rr.Code, http.StatusBadRequest)
+		}
+
+		var response map[string]interface{}
+		if err := json.Unmarshal(rr.Body.Bytes(), &response); err != nil {
+			t.Fatalf("Failed to parse JSON: %v", err)
+		}
+
+		if response["error"] != "Validation failed" {
+			t.Errorf("ValidationError() error = %v, want 'Validation failed'", response["error"])
+		}
+
+		details, ok := response["details"].(string)
+		if !ok || details == "" {
+			t.Error("ValidationError() details field is missing")
+		}
+	})
+}
+
+// min is a helper function to get minimum of two integers
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

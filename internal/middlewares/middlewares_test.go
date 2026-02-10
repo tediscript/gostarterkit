@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -829,4 +830,128 @@ func TestMiddlewareChain(t *testing.T) {
 	if !strings.Contains(logOutput, "/api/test") {
 		t.Error("Expected '/api/test' in log output")
 	}
+}
+
+func TestJWTAuthMiddleware(t *testing.T) {
+	// Create test handler that checks user ID
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userID, ok := GetUserID(r)
+		if !ok {
+			t.Error("Expected user ID in context")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(userID))
+	})
+
+	// Apply JWT middleware
+	middleware := JWTAuthMiddleware(handler)
+
+	t.Run("missing authorization header", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/api/protected", nil)
+
+		rr := httptest.NewRecorder()
+		middleware.ServeHTTP(rr, req)
+
+		if rr.Code != http.StatusUnauthorized {
+			t.Errorf("Expected status 401, got: %d", rr.Code)
+		}
+
+		// Response should indicate authorization is required
+		body := rr.Body.String()
+		if body == "" {
+			t.Error("Expected response body to contain error message")
+		}
+	})
+
+	t.Run("empty authorization header", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/api/protected", nil)
+		req.Header.Set("Authorization", "")
+
+		rr := httptest.NewRecorder()
+		middleware.ServeHTTP(rr, req)
+
+		if rr.Code != http.StatusUnauthorized {
+			t.Errorf("Expected status 401, got: %d", rr.Code)
+		}
+	})
+
+	t.Run("bearer prefix format", func(t *testing.T) {
+		token := "some.jwt.token"
+
+		req := httptest.NewRequest("GET", "/api/protected", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+
+		rr := httptest.NewRecorder()
+		middleware.ServeHTTP(rr, req)
+
+		// Will fail validation but demonstrates Bearer prefix handling
+		if rr.Code != http.StatusUnauthorized {
+			t.Errorf("Expected status 401, got: %d", rr.Code)
+		}
+	})
+
+	t.Run("token without bearer prefix", func(t *testing.T) {
+		token := "some.jwt.token"
+
+		req := httptest.NewRequest("GET", "/api/protected", nil)
+		req.Header.Set("Authorization", token)
+
+		rr := httptest.NewRecorder()
+		middleware.ServeHTTP(rr, req)
+
+		// Will fail validation but demonstrates raw token handling
+		if rr.Code != http.StatusUnauthorized {
+			t.Errorf("Expected status 401, got: %d", rr.Code)
+		}
+	})
+}
+
+func TestGetUserID(t *testing.T) {
+	t.Run("user ID in context", func(t *testing.T) {
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			userID, ok := GetUserID(r)
+			if !ok {
+				t.Error("Expected user ID to be present")
+			}
+			if userID != "testuser123" {
+				t.Errorf("Expected user ID 'testuser123', got: %s", userID)
+			}
+			w.WriteHeader(http.StatusOK)
+		})
+
+		// Manually set user ID in context
+		ctx := context.WithValue(context.Background(), UserIDContextKey, "testuser123")
+		req := httptest.NewRequest("GET", "/test", nil).WithContext(ctx)
+
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+
+		if rr.Code != http.StatusOK {
+			t.Errorf("Expected status 200, got: %d", rr.Code)
+		}
+	})
+
+	t.Run("user ID not in context", func(t *testing.T) {
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			userID, ok := GetUserID(r)
+			if ok {
+				t.Error("Expected user ID to not be present")
+			}
+			if userID != "" {
+				t.Errorf("Expected empty user ID, got: %s", userID)
+			}
+			w.WriteHeader(http.StatusOK)
+		})
+
+		req := httptest.NewRequest("GET", "/test", nil)
+
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+
+		if rr.Code != http.StatusOK {
+			t.Errorf("Expected status 200, got: %d", rr.Code)
+		}
+	})
 }
