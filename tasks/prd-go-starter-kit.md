@@ -319,24 +319,24 @@ A production-ready Go project starter kit that follows idiomatic Go practices, p
 **Description:** As a developer, I need JWT authentication for API endpoints so stateless auth is available.
 
 **Acceptance Criteria:**
-- [ ] Generate JWT tokens with HS256 signing
-- [ ] JWT middleware validates token and sets user context
-- [ ] Token generation endpoint (/api/login)
-- [ ] Protected API routes require valid JWT
-- [ ] Token expiration configured via `JWT_EXPIRATION_SECONDS` (default: 3600)
-- [ ] JWT signing secret configured via `JWT_SIGNING_SECRET` or `JWT_SIGNING_SECRET_FILE` (Docker Swarm)
-- [ ] Use idiomatic JWT library (golang-jwt/jwt) or minimal stdlib implementation
-- [ ] Unit test for JWT token generation with HS256
-- [ ] Integration test for JWT token validation in middleware
-- [ ] Integration test for middleware rejection of invalid/expired tokens
-- [ ] Integration test for protected API route requiring valid JWT
-- [ ] Negative case: Expired token rejected
-- [ ] Negative case: Malformed token rejected
-- [ ] Negative case: Token with wrong signature rejected
-- [ ] Edge case: JWT with 0 seconds expiration
-- [ ] Edge case: JWT with very large payload
-- [ ] Edge case: Multiple concurrent token validations
-- [ ] Edge case: Token with unusual character encoding
+- [x] Generate JWT tokens with HS256 signing
+- [x] JWT middleware validates token and sets user context
+- [x] Token generation endpoint (/api/login)
+- [x] Protected API routes require valid JWT
+- [x] Token expiration configured via `JWT_EXPIRATION_SECONDS` (default: 3600)
+- [x] JWT signing secret configured via `JWT_SIGNING_SECRET` or `JWT_SIGNING_SECRET_FILE` (Docker Swarm)
+- [x] Use idiomatic JWT library (golang-jwt/jwt) or minimal stdlib implementation
+- [x] Unit test for JWT token generation with HS256
+- [x] Integration test for JWT token validation in middleware
+- [x] Integration test for middleware rejection of invalid/expired tokens
+- [x] Integration test for protected API route requiring valid JWT
+- [x] Negative case: Expired token rejected
+- [x] Negative case: Malformed token rejected
+- [x] Negative case: Token with wrong signature rejected
+- [x] Edge case: JWT with 0 seconds expiration
+- [x] Edge case: JWT with very large payload
+- [x] Edge case: Multiple concurrent token validations
+- [x] Edge case: Token with unusual character encoding
 
 ### US-015: Configure Air for hot-reload
 **Description:** As a developer, I need hot-reload in development so I can see changes immediately.
