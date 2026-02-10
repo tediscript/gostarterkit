@@ -3,6 +3,7 @@ package middlewares
 import (
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/tediscript/gostarterkit/internal/logger"
@@ -24,6 +25,29 @@ func CorrelationIDMiddleware(next http.Handler) http.Handler {
 
 		// Add correlation ID to response header
 		w.Header().Set("X-Correlation-ID", correlationID)
+
+		// Serve request with new context
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// RequestIDMiddleware adds or generates a request ID for each request
+func RequestIDMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Check for existing request ID in header
+		requestID := r.Header.Get("X-Request-ID")
+
+		// Generate new request ID if not present, empty, whitespace-only, or "null"
+		trimmedID := strings.TrimSpace(requestID)
+		if trimmedID == "" || strings.EqualFold(trimmedID, "null") {
+			requestID = logger.GenerateRequestID()
+		}
+
+		// Add request ID to context
+		ctx := logger.NewContextWithRequestID(r.Context(), requestID)
+
+		// Add request ID to response header
+		w.Header().Set("X-Request-ID", requestID)
 
 		// Serve request with new context
 		next.ServeHTTP(w, r.WithContext(ctx))
