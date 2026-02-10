@@ -63,7 +63,7 @@
 **Standard Categories:**
 
 - **HTTP Server:**
-  - `HTTP_PORT` (default: 8080)
+  - `HTTP_PORT` (default: 8880)
   - `HTTP_SHUTDOWN_TIMEOUT` (default: 30s)
   - `HTTP_READ_TIMEOUT`
   - `HTTP_WRITE_TIMEOUT`
@@ -206,7 +206,7 @@ gostarterkit/
 ### HTTP Server Configuration
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `HTTP_PORT` | HTTP server port | 8080 |
+| `HTTP_PORT` | HTTP server port | 8880 |
 | `HTTP_SHUTDOWN_TIMEOUT` | Graceful shutdown timeout (seconds) | 30 |
 | `HTTP_READ_TIMEOUT` | Read timeout (seconds) | - |
 | `HTTP_WRITE_TIMEOUT` | Write timeout (seconds) | - |

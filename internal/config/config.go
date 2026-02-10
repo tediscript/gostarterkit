@@ -13,7 +13,7 @@ import (
 type Config struct {
 	// HTTP Server Configuration
 	HTTP struct {
-		Port            int           `env:"HTTP_PORT" default:"8080"`
+		Port            int           `env:"HTTP_PORT" default:"8880"`
 		ShutdownTimeout time.Duration `env:"HTTP_SHUTDOWN_TIMEOUT" default:"30s"`
 		ReadTimeout     time.Duration `env:"HTTP_READ_TIMEOUT" default:"15s"`
 		WriteTimeout    time.Duration `env:"HTTP_WRITE_TIMEOUT" default:"15s"`
@@ -94,7 +94,7 @@ func Load(envFile string) *Config {
 // loadConfig populates the Config struct from environment variables
 func loadConfig(cfg *Config) {
 	// HTTP Configuration
-	cfg.HTTP.Port = getEnvInt("HTTP_PORT", 8080)
+	cfg.HTTP.Port = getEnvInt("HTTP_PORT", 8880)
 	cfg.HTTP.ShutdownTimeout = getEnvDuration("HTTP_SHUTDOWN_TIMEOUT", 30*time.Second)
 	cfg.HTTP.ReadTimeout = getEnvDuration("HTTP_READ_TIMEOUT", 15*time.Second)
 	cfg.HTTP.WriteTimeout = getEnvDuration("HTTP_WRITE_TIMEOUT", 15*time.Second)

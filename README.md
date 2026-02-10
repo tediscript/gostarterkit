@@ -50,7 +50,7 @@ make run
 make watch
 ```
 
-The application will start on `http://localhost:8080` by default.
+The application will start on `http://localhost:8880` by default.
 
 ## Configuration
 
@@ -60,7 +60,7 @@ Configuration is managed through environment variables. Copy `.env.example` to `
 
 | Category | Variable | Description | Default |
 |----------|----------|-------------|---------|
-| **HTTP Server** | `HTTP_PORT` | HTTP server port | 8080 |
+| **HTTP Server** | `HTTP_PORT` | HTTP server port | 8880 |
 | | `HTTP_SHUTDOWN_TIMEOUT` | Graceful shutdown timeout | 30s |
 | | `HTTP_READ_TIMEOUT` | Read timeout | 15s |
 | | `HTTP_WRITE_TIMEOUT` | Write timeout | 15s |

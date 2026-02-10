@@ -45,8 +45,8 @@ func TestLoadConfig(t *testing.T) {
 		cfg := &Config{}
 		loadConfig(cfg)
 
-		if cfg.HTTP.Port != 8080 {
-			t.Errorf("expected HTTP.Port to be 8080, got %d", cfg.HTTP.Port)
+		if cfg.HTTP.Port != 8880 {
+			t.Errorf("expected HTTP.Port to be 8880, got %d", cfg.HTTP.Port)
 		}
 		if cfg.SQLite.DBFile != "./app.db" {
 			t.Errorf("expected SQLite.DBFile to be './app.db', got %s", cfg.SQLite.DBFile)
@@ -290,7 +290,7 @@ func TestLoadFromEnvFile(t *testing.T) {
 	})
 
 	t.Run("handles comments", func(t *testing.T) {
-		content := "# This is a comment\nHTTP_PORT=8080\n"
+		content := "# This is a comment\nHTTP_PORT=8880\n"
 		tmpfile, err := os.CreateTemp("", "testenv*.env")
 		if err != nil {
 			t.Fatal(err)
@@ -311,13 +311,13 @@ func TestLoadFromEnvFile(t *testing.T) {
 			t.Errorf("failed to load env file: %v", err)
 		}
 
-		if os.Getenv("HTTP_PORT") != "8080" {
-			t.Errorf("expected HTTP_PORT to be '8080', got '%s'", os.Getenv("HTTP_PORT"))
+		if os.Getenv("HTTP_PORT") != "8880" {
+			t.Errorf("expected HTTP_PORT to be '8880', got '%s'", os.Getenv("HTTP_PORT"))
 		}
 	})
 
 	t.Run("handles empty lines", func(t *testing.T) {
-		content := "\n\nHTTP_PORT=8080\n\n"
+		content := "\n\nHTTP_PORT=8880\n\n"
 		tmpfile, err := os.CreateTemp("", "testenv*.env")
 		if err != nil {
 			t.Fatal(err)
@@ -338,8 +338,8 @@ func TestLoadFromEnvFile(t *testing.T) {
 			t.Errorf("failed to load env file: %v", err)
 		}
 
-		if os.Getenv("HTTP_PORT") != "8080" {
-			t.Errorf("expected HTTP_PORT to be '8080', got '%s'", os.Getenv("HTTP_PORT"))
+		if os.Getenv("HTTP_PORT") != "8880" {
+			t.Errorf("expected HTTP_PORT to be '8880', got '%s'", os.Getenv("HTTP_PORT"))
 		}
 	})
 
@@ -375,7 +375,7 @@ func TestLoadFromEnvFile(t *testing.T) {
 	})
 
 	t.Run("handles whitespace", func(t *testing.T) {
-		content := "HTTP_PORT = 8080\nAPP_ENV= production \n"
+		content := "HTTP_PORT = 8880\nAPP_ENV= production \n"
 		tmpfile, err := os.CreateTemp("", "testenv*.env")
 		if err != nil {
 			t.Fatal(err)
@@ -397,8 +397,8 @@ func TestLoadFromEnvFile(t *testing.T) {
 			t.Errorf("failed to load env file: %v", err)
 		}
 
-		if os.Getenv("HTTP_PORT") != "8080" {
-			t.Errorf("expected HTTP_PORT to be '8080', got '%s'", os.Getenv("HTTP_PORT"))
+		if os.Getenv("HTTP_PORT") != "8880" {
+			t.Errorf("expected HTTP_PORT to be '8880', got '%s'", os.Getenv("HTTP_PORT"))
 		}
 		if os.Getenv("APP_ENV") != "production" {
 			t.Errorf("expected APP_ENV to be 'production', got '%s'", os.Getenv("APP_ENV"))
@@ -486,7 +486,7 @@ func TestLoadFromEnvFile(t *testing.T) {
 	})
 
 	t.Run("does not override existing environment variables", func(t *testing.T) {
-		content := "HTTP_PORT=8080\n"
+		content := "HTTP_PORT=8880\n"
 		tmpfile, err := os.CreateTemp("", "testenv*.env")
 		if err != nil {
 			t.Fatal(err)

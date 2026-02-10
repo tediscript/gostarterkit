@@ -112,7 +112,7 @@ A production-ready Go project starter kit that follows idiomatic Go practices, p
 - [x] Handle SIGTERM and SIGINT signals
 - [x] Wait for in-flight requests up to timeout (default 30s)
 - [x] Log shutdown process and completion
-- [x] Server accepts connections on `HTTP_PORT` (default 8080)
+- [x] Server accepts connections on `HTTP_PORT` (default 8880)
 - [x] Integration test for server startup on `HTTP_PORT`
 - [x] Integration test for graceful shutdown on SIGTERM signal
 - [x] Integration test for graceful shutdown on SIGINT signal

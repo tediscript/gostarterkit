@@ -99,7 +99,7 @@ Provide summary of work done:
 8. Run `go test ./...` - all pass
 9. Run `make build` - succeeds
 10. Run `make run` - server starts
-11. Test via browser: `http://localhost:8080/` - renders correctly
+11. Test via browser: `http://localhost:8880/` - renders correctly
 12. Update PRD: mark all US-003 criteria as `[x]`
 13. Commit the work using use_skill commit method
 14. Push the work to current branch
