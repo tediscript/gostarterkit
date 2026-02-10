@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"net/http"
+
+	"github.com/tediscript/gostarterkit/internal/health"
 )
 
 // TemplateCache interface for template rendering
@@ -21,13 +23,15 @@ type TemplateData struct {
 type Handlers struct {
 	Templates    TemplateCache
 	TemplatesDir string
+	Health       *health.HealthChecker
 }
 
 // New creates a new Handlers instance
-func New(templates TemplateCache, templatesDir string) *Handlers {
+func New(templates TemplateCache, templatesDir string, healthChecker *health.HealthChecker) *Handlers {
 	return &Handlers{
 		Templates:    templates,
 		TemplatesDir: templatesDir,
+		Health:       healthChecker,
 	}
 }
 
@@ -113,4 +117,41 @@ func (h *Handlers) APIData(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 	JSONResponse(w, http.StatusOK, data)
+}
+
+// Healthz handles GET /healthz - returns basic health info
+func (h *Handlers) Healthz(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	response := h.Health.Healthz()
+	statusCode := http.StatusOK
+
+	health.WriteJSON(w, response)
+	w.WriteHeader(statusCode)
+}
+
+// Livez handles GET /livez - liveness probe
+func (h *Handlers) Livez(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	response := h.Health.Livez()
+	statusCode := http.StatusOK
+
+	health.WriteJSON(w, response)
+	w.WriteHeader(statusCode)
+}
+
+// Readyz handles GET /readyz - readiness probe with database connectivity check
+func (h *Handlers) Readyz(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	response := h.Health.Readyz()
+	statusCode := http.StatusOK
+
+	if response.Status != health.StatusReady {
+		statusCode = http.StatusServiceUnavailable
+	}
+
+	w.WriteHeader(statusCode)
+	health.WriteJSON(w, response)
 }

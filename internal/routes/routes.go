@@ -1,20 +1,29 @@
 package routes
 
 import (
-	"encoding/json"
+	"html/template"
 	"net/http"
+	"time"
 
+	"github.com/tediscript/gostarterkit/internal/auth"
+	"github.com/tediscript/gostarterkit/internal/config"
 	"github.com/tediscript/gostarterkit/internal/handlers"
 	"github.com/tediscript/gostarterkit/internal/middlewares"
 )
 
 // Routes registers all application routes and returns a handler with middleware
-func Routes(mux *http.ServeMux, h *handlers.Handlers) http.Handler {
+func Routes(mux *http.ServeMux, h *handlers.Handlers, cfg *config.Config, tpl *template.Template) http.Handler {
 	// Register routes on the mux
-	mux.HandleFunc("GET /healthz", handleHealthz)
-	mux.HandleFunc("GET /livez", handleLivez)
-	mux.HandleFunc("GET /readyz", handleReadyz)
+	mux.HandleFunc("GET /healthz", h.Healthz)
+	mux.HandleFunc("GET /livez", h.Livez)
+	mux.HandleFunc("GET /readyz", h.Readyz)
 	mux.HandleFunc("GET /", h.Home)
+
+	// Auth routes
+	mux.HandleFunc("GET /login", handlers.LoginPage(tpl))
+	mux.HandleFunc("POST /login", handlers.LoginHandler)
+	mux.HandleFunc("GET /logout", handlers.LogoutHandler)
+	mux.Handle("GET /protected", auth.RequireAuth(handlers.ProtectedPage(tpl)))
 
 	// API routes
 	mux.HandleFunc("GET /api/status", h.APIStatus)
@@ -22,27 +31,18 @@ func Routes(mux *http.ServeMux, h *handlers.Handlers) http.Handler {
 	mux.HandleFunc("GET /api/error", h.APIError)
 	mux.HandleFunc("GET /api/data", h.APIData)
 
-	// Apply middlewares to all routes
-	return middlewares.CorrelationIDMiddleware(
-		middlewares.LoggingMiddleware(mux),
+	// Create rate limit middleware with configuration
+	rateLimitMiddleware := middlewares.RateLimitMiddleware(
+		cfg.RateLimit.RequestsPerWindow,
+		time.Duration(cfg.RateLimit.WindowSeconds)*time.Second,
 	)
-}
 
-// Health check handlers
-func handleHealthz(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
-}
-
-func handleLivez(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "alive"})
-}
-
-func handleReadyz(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "ready"})
+	// Apply middlewares to all routes (order matters)
+	return middlewares.CorrelationIDMiddleware(
+		middlewares.RequestIDMiddleware(
+			middlewares.LoggingMiddleware(
+				rateLimitMiddleware(mux),
+			),
+		),
+	)
 }

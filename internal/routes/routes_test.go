@@ -1,12 +1,23 @@
 package routes
 
 import (
+	"context"
+	"html/template"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/tediscript/gostarterkit/internal/config"
 	"github.com/tediscript/gostarterkit/internal/handlers"
+	"github.com/tediscript/gostarterkit/internal/health"
 )
+
+// mockDB is a mock database for testing
+type mockDB struct{}
+
+func (m *mockDB) Ping(ctx context.Context) error {
+	return nil
+}
 
 // MockTemplateCache is a mock implementation of TemplateCache for testing
 type MockTemplateCache struct {
@@ -33,11 +44,24 @@ func (m *MockTemplateCache) CheckForReload(templatesDir string) error {
 // TestRouteRegistration tests that routes are properly registered
 func TestRouteRegistration(t *testing.T) {
 	mockCache := &MockTemplateCache{}
-	h := handlers.New(mockCache, "./templates")
+	mockDB := &mockDB{}
+	mockHealth := health.New(mockDB)
+	h := handlers.New(mockCache, "./templates", mockHealth)
 	mux := http.NewServeMux()
 
+	// Create test config
+	cfg := &config.Config{}
+	cfg.RateLimit.RequestsPerWindow = 100
+	cfg.RateLimit.WindowSeconds = 60
+
+	// Create a simple template for testing
+	tpl, err := template.New("base.html").Parse("{{define \"base.html\"}}{{end}}")
+	if err != nil {
+		t.Fatalf("Failed to create test template: %v", err)
+	}
+
 	// Register routes
-	Routes(mux, h)
+	Routes(mux, h, cfg, tpl)
 
 	// Test that we can access registered routes
 	tests := []struct {
@@ -69,10 +93,22 @@ func TestRouteRegistration(t *testing.T) {
 // TestHandlerMapping tests that handlers map to correct endpoints
 func TestHandlerMapping(t *testing.T) {
 	mockCache := &MockTemplateCache{}
-	h := handlers.New(mockCache, "./templates")
+	mockDB := &mockDB{}
+	mockHealth := health.New(mockDB)
+	h := handlers.New(mockCache, "./templates", mockHealth)
 	mux := http.NewServeMux()
 
-	Routes(mux, h)
+	cfg := &config.Config{}
+	cfg.RateLimit.RequestsPerWindow = 100
+	cfg.RateLimit.WindowSeconds = 60
+
+	// Create a simple template for testing
+	tpl, err := template.New("base.html").Parse("{{define \"base.html\"}}{{end}}")
+	if err != nil {
+		t.Fatalf("Failed to create test template: %v", err)
+	}
+
+	Routes(mux, h, cfg, tpl)
 
 	// Test /healthz endpoint
 	req := httptest.NewRequest("GET", "/healthz", nil)
@@ -130,10 +166,21 @@ func TestHandlerMapping(t *testing.T) {
 // TestUndefinedRoutes returns 404
 func TestUndefinedRoutes(t *testing.T) {
 	mockCache := &MockTemplateCache{}
-	h := handlers.New(mockCache, "./templates")
+	mockHealth := health.New(nil)
+	h := handlers.New(mockCache, "./templates", mockHealth)
 	mux := http.NewServeMux()
 
-	Routes(mux, h)
+	cfg := &config.Config{}
+	cfg.RateLimit.RequestsPerWindow = 100
+	cfg.RateLimit.WindowSeconds = 60
+
+	// Create a simple template for testing
+	tpl, err := template.New("base.html").Parse("{{define \"base.html\"}}{{end}}")
+	if err != nil {
+		t.Fatalf("Failed to create test template: %v", err)
+	}
+
+	Routes(mux, h, cfg, tpl)
 
 	// Test undefined route
 	req := httptest.NewRequest("GET", "/undefined", nil)
@@ -152,10 +199,21 @@ func TestUndefinedRoutes(t *testing.T) {
 // TestWrongHTTPMethod returns 405
 func TestWrongHTTPMethod(t *testing.T) {
 	mockCache := &MockTemplateCache{}
-	h := handlers.New(mockCache, "./templates")
+	mockHealth := health.New(nil)
+	h := handlers.New(mockCache, "./templates", mockHealth)
 	mux := http.NewServeMux()
 
-	Routes(mux, h)
+	cfg := &config.Config{}
+	cfg.RateLimit.RequestsPerWindow = 100
+	cfg.RateLimit.WindowSeconds = 60
+
+	// Create a simple template for testing
+	tpl, err := template.New("base.html").Parse("{{define \"base.html\"}}{{end}}")
+	if err != nil {
+		t.Fatalf("Failed to create test template: %v", err)
+	}
+
+	Routes(mux, h, cfg, tpl)
 
 	tests := []struct {
 		name           string
@@ -185,10 +243,21 @@ func TestWrongHTTPMethod(t *testing.T) {
 // TestTrailingSlashes tests routes with trailing slashes
 func TestTrailingSlashes(t *testing.T) {
 	mockCache := &MockTemplateCache{}
-	h := handlers.New(mockCache, "./templates")
+	mockHealth := health.New(nil)
+	h := handlers.New(mockCache, "./templates", mockHealth)
 	mux := http.NewServeMux()
 
-	Routes(mux, h)
+	cfg := &config.Config{}
+	cfg.RateLimit.RequestsPerWindow = 100
+	cfg.RateLimit.WindowSeconds = 60
+
+	// Create a simple template for testing
+	tpl, err := template.New("base.html").Parse("{{define \"base.html\"}}{{end}}")
+	if err != nil {
+		t.Fatalf("Failed to create test template: %v", err)
+	}
+
+	Routes(mux, h, cfg, tpl)
 
 	tests := []struct {
 		name           string
@@ -218,10 +287,21 @@ func TestTrailingSlashes(t *testing.T) {
 // TestCaseSensitivity tests case sensitivity in route paths
 func TestCaseSensitivity(t *testing.T) {
 	mockCache := &MockTemplateCache{}
-	h := handlers.New(mockCache, "./templates")
+	mockHealth := health.New(nil)
+	h := handlers.New(mockCache, "./templates", mockHealth)
 	mux := http.NewServeMux()
 
-	Routes(mux, h)
+	cfg := &config.Config{}
+	cfg.RateLimit.RequestsPerWindow = 100
+	cfg.RateLimit.WindowSeconds = 60
+
+	// Create a simple template for testing
+	tpl, err := template.New("base.html").Parse("{{define \"base.html\"}}{{end}}")
+	if err != nil {
+		t.Fatalf("Failed to create test template: %v", err)
+	}
+
+	Routes(mux, h, cfg, tpl)
 
 	tests := []struct {
 		name           string
@@ -251,10 +331,21 @@ func TestCaseSensitivity(t *testing.T) {
 // TestRoutesWithSpecialCharacters tests routes with special characters
 func TestRoutesWithSpecialCharacters(t *testing.T) {
 	mockCache := &MockTemplateCache{}
-	h := handlers.New(mockCache, "./templates")
+	mockHealth := health.New(nil)
+	h := handlers.New(mockCache, "./templates", mockHealth)
 	mux := http.NewServeMux()
 
-	Routes(mux, h)
+	cfg := &config.Config{}
+	cfg.RateLimit.RequestsPerWindow = 100
+	cfg.RateLimit.WindowSeconds = 60
+
+	// Create a simple template for testing
+	tpl, err := template.New("base.html").Parse("{{define \"base.html\"}}{{end}}")
+	if err != nil {
+		t.Fatalf("Failed to create test template: %v", err)
+	}
+
+	Routes(mux, h, cfg, tpl)
 
 	tests := []struct {
 		name           string
@@ -282,10 +373,21 @@ func TestRoutesWithSpecialCharacters(t *testing.T) {
 // TestVeryLongPathSegments tests very long path segments
 func TestVeryLongPathSegments(t *testing.T) {
 	mockCache := &MockTemplateCache{}
-	h := handlers.New(mockCache, "./templates")
+	mockHealth := health.New(nil)
+	h := handlers.New(mockCache, "./templates", mockHealth)
 	mux := http.NewServeMux()
 
-	Routes(mux, h)
+	cfg := &config.Config{}
+	cfg.RateLimit.RequestsPerWindow = 100
+	cfg.RateLimit.WindowSeconds = 60
+
+	// Create a simple template for testing
+	tpl, err := template.New("base.html").Parse("{{define \"base.html\"}}{{end}}")
+	if err != nil {
+		t.Fatalf("Failed to create test template: %v", err)
+	}
+
+	Routes(mux, h, cfg, tpl)
 
 	// Create a very long path segment with valid characters
 	longSegment := string(make([]byte, 10000))
@@ -306,10 +408,21 @@ func TestVeryLongPathSegments(t *testing.T) {
 // TestRoutesWithQueryParameters tests routes with query parameters
 func TestRoutesWithQueryParameters(t *testing.T) {
 	mockCache := &MockTemplateCache{}
-	h := handlers.New(mockCache, "./templates")
+	mockHealth := health.New(nil)
+	h := handlers.New(mockCache, "./templates", mockHealth)
 	mux := http.NewServeMux()
 
-	Routes(mux, h)
+	cfg := &config.Config{}
+	cfg.RateLimit.RequestsPerWindow = 100
+	cfg.RateLimit.WindowSeconds = 60
+
+	// Create a simple template for testing
+	tpl, err := template.New("base.html").Parse("{{define \"base.html\"}}{{end}}")
+	if err != nil {
+		t.Fatalf("Failed to create test template: %v", err)
+	}
+
+	Routes(mux, h, cfg, tpl)
 
 	tests := []struct {
 		name           string

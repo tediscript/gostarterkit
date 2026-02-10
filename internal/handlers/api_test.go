@@ -19,9 +19,9 @@ func (m *mockTemplateCache) CheckForReload(templatesDir string) error {
 	return nil
 }
 
-// TestAPIStatus tests the /api/status endpoint
+// TestAPIStatus tests /api/status endpoint
 func TestAPIStatus(t *testing.T) {
-	h := New(&mockTemplateCache{}, "templates")
+	h := New(&mockTemplateCache{}, "templates", nil)
 
 	tests := []struct {
 		name       string
@@ -78,9 +78,9 @@ func TestAPIStatus(t *testing.T) {
 	}
 }
 
-// TestAPIHello tests the /api/hello endpoint
+// TestAPIHello tests /api/hello endpoint
 func TestAPIHello(t *testing.T) {
-	h := New(&mockTemplateCache{}, "templates")
+	h := New(&mockTemplateCache{}, "templates", nil)
 
 	tests := []struct {
 		name       string
@@ -132,9 +132,9 @@ func TestAPIHello(t *testing.T) {
 	}
 }
 
-// TestAPIError tests the /api/error endpoint with different error types
+// TestAPIError tests /api/error endpoint with different error types
 func TestAPIError(t *testing.T) {
-	h := New(&mockTemplateCache{}, "templates")
+	h := New(&mockTemplateCache{}, "templates", nil)
 
 	tests := []struct {
 		name       string
@@ -215,9 +215,9 @@ func TestAPIError(t *testing.T) {
 	}
 }
 
-// TestAPIData tests the /api/data endpoint with nested data structures
+// TestAPIData tests /api/data endpoint with nested data structures
 func TestAPIData(t *testing.T) {
-	h := New(&mockTemplateCache{}, "templates")
+	h := New(&mockTemplateCache{}, "templates", nil)
 
 	t.Run("returns complex nested data", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/api/data", nil)
@@ -274,7 +274,7 @@ func TestAPIData(t *testing.T) {
 
 // TestAPIEndpointConsistency tests that all API endpoints return consistent JSON structure
 func TestAPIEndpointConsistency(t *testing.T) {
-	h := New(&mockTemplateCache{}, "templates")
+	h := New(&mockTemplateCache{}, "templates", nil)
 
 	tests := []struct {
 		name    string
@@ -322,7 +322,7 @@ func TestAPIEndpointConsistency(t *testing.T) {
 
 // TestAPIErrorResponseConsistency tests that error responses have consistent structure
 func TestAPIErrorResponseConsistency(t *testing.T) {
-	h := New(&mockTemplateCache{}, "templates")
+	h := New(&mockTemplateCache{}, "templates", nil)
 
 	errorTypes := []string{"notfound", "badrequest", "validation", ""}
 
@@ -360,7 +360,7 @@ func TestAPIErrorResponseConsistency(t *testing.T) {
 
 // TestAPIStatusCodeHandling tests that various status codes are handled correctly
 func TestAPIStatusCodeHandling(t *testing.T) {
-	h := New(&mockTemplateCache{}, "templates")
+	h := New(&mockTemplateCache{}, "templates", nil)
 
 	tests := []struct {
 		name       string
@@ -396,7 +396,7 @@ func TestAPIStatusCodeHandling(t *testing.T) {
 
 // TestAPIConcurrentRequests tests multiple concurrent API requests
 func TestAPIConcurrentRequests(t *testing.T) {
-	h := New(&mockTemplateCache{}, "templates")
+	h := New(&mockTemplateCache{}, "templates", nil)
 
 	done := make(chan bool, 10)
 
