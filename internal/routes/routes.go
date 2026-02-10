@@ -16,6 +16,12 @@ func Routes(mux *http.ServeMux, h *handlers.Handlers) http.Handler {
 	mux.HandleFunc("GET /readyz", handleReadyz)
 	mux.HandleFunc("GET /", h.Home)
 
+	// API routes
+	mux.HandleFunc("GET /api/status", h.APIStatus)
+	mux.HandleFunc("GET /api/hello", h.APIHello)
+	mux.HandleFunc("GET /api/error", h.APIError)
+	mux.HandleFunc("GET /api/data", h.APIData)
+
 	// Apply middlewares to all routes
 	return middlewares.CorrelationIDMiddleware(
 		middlewares.LoggingMiddleware(mux),
