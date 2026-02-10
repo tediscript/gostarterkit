@@ -1,0 +1,104 @@
+{{define "protected.html"}}
+{{template "base.html" .}}
+
+{{define "content"}}
+    <div class="protected-container">
+        <div class="welcome-card">
+            <h2>Welcome, {{.UserID}}!</h2>
+            <p class="success-message">
+                You have successfully accessed a protected page.
+            </p>
+            <p class="description">
+                This page is only accessible to authenticated users. Your session is
+                stored in a secure HTTP-only cookie and is validated on every request.
+            </p>
+            <div class="actions">
+                <a href="/" class="btn btn-primary">Home</a>
+                <a href="/logout" class="btn btn-secondary">Logout</a>
+            </div>
+        </div>
+        <div class="info-card">
+            <h3>Session Information</h3>
+            <ul>
+                <li><strong>User ID:</strong> {{.UserID}}</li>
+                <li><strong>Authentication:</strong> Valid</li>
+                <li><strong>Session Type:</strong> Secure Cookie</li>
+                <li><strong>HTTP-Only:</strong> Yes</li>
+                <li><strong>SameSite:</strong> Lax</li>
+            </ul>
+        </div>
+    </div>
+    <style>
+        .protected-container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .welcome-card, .info-card {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .welcome-card h2, .info-card h3 {
+            color: #333;
+            margin-top: 0;
+        }
+        .success-message {
+            color: #155724;
+            background-color: #d4edda;
+            padding: 10px;
+            border-radius: 3px;
+            border: 1px solid #c3e6cb;
+            margin: 15px 0;
+        }
+        .description {
+            color: #555;
+            line-height: 1.6;
+            margin: 15px 0;
+        }
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .btn {
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 3px;
+            display: inline-block;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        .info-card ul {
+            list-style: none;
+            padding: 0;
+        }
+        .info-card li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .info-card li:last-child {
+            border-bottom: none;
+        }
+        .info-card strong {
+            display: inline-block;
+            width: 150px;
+            color: #555;
+        }
+    </style>
+{{end}}
+{{end}}
