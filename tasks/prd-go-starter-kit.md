@@ -169,18 +169,18 @@ A production-ready Go project starter kit that follows idiomatic Go practices, p
 **Description:** As a developer, I need request ID tracking so I can correlate logs across services.
 
 **Acceptance Criteria:**
-- [ ] Middleware generates UUID if not present in header
-- [ ] Request ID stored in request context
-- [ ] Request ID included in response headers (X-Request-ID)
-- [ ] Request ID available in all handlers via context
-- [ ] Request ID logged with all log entries
-- [ ] Middleware testable via integration tests
-- [ ] Negative case: Malformed UUID in header handled
-- [ ] Negative case: Empty/null request ID handled
-- [ ] Edge case: Very long request ID strings
-- [ ] Edge case: Request ID already present in header preserved
-- [ ] Edge case: Multiple concurrent requests with different IDs
-- [ ] Edge case: Request ID with special characters
+- [x] Middleware generates UUID if not present in header
+- [x] Request ID stored in request context
+- [x] Request ID included in response headers (X-Request-ID)
+- [x] Request ID available in all handlers via context
+- [x] Request ID logged with all log entries
+- [x] Middleware testable via integration tests
+- [x] Negative case: Malformed UUID in header handled
+- [x] Negative case: Empty/null request ID handled
+- [x] Edge case: Very long request ID strings
+- [x] Edge case: Request ID already present in header preserved
+- [x] Edge case: Multiple concurrent requests with different IDs
+- [x] Edge case: Request ID with special characters
 
 ### US-008: Build REST API helper functions
 **Description:** As a developer, I need helper functions for building REST APIs so handler code is concise.
