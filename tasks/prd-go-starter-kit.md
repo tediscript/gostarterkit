@@ -186,24 +186,24 @@ A production-ready Go project starter kit that follows idiomatic Go practices, p
 **Description:** As a developer, I need helper functions for building REST APIs so handler code is concise.
 
 **Acceptance Criteria:**
-- [ ] JSONResponse helper for success responses
-- [ ] ErrorResponse helper for error responses
-- [ ] Helper handles Content-Type header
-- [ ] Helpers support status codes
-- [ ] Example API handler demonstrates usage
-- [ ] API returns proper HTTP status codes
-- [ ] Unit test for JSONResponse helper with various data types
-- [ ] Unit test for ErrorResponse helper with various error scenarios
-- [ ] Unit test for Content-Type header setting
-- [ ] Unit test for status code handling in helpers
-- [ ] Integration test for example API handler demonstrating usage
-- [ ] Negative case: JSON with circular references handled
-- [ ] Negative case: Invalid JSON structure handled
-- [ ] Edge case: Very large response bodies
-- [ ] Edge case: JSON with special characters
-- [ ] Edge case: Nil/empty data structures
-- [ ] Edge case: Multiple concurrent API responses
-- [ ] Edge case: Response with nested data structures
+- [x] JSONResponse helper for success responses
+- [x] ErrorResponse helper for error responses
+- [x] Helper handles Content-Type header
+- [x] Helpers support status codes
+- [x] Example API handler demonstrates usage
+- [x] API returns proper HTTP status codes
+- [x] Unit test for JSONResponse helper with various data types
+- [x] Unit test for ErrorResponse helper with various error scenarios
+- [x] Unit test for Content-Type header setting
+- [x] Unit test for status code handling in helpers
+- [x] Integration test for example API handler demonstrating usage
+- [x] Negative case: JSON with circular references handled
+- [x] Negative case: Invalid JSON structure handled
+- [x] Edge case: Very large response bodies
+- [x] Edge case: JSON with special characters
+- [x] Edge case: Nil/empty data structures
+- [x] Edge case: Multiple concurrent API responses
+- [x] Edge case: Response with nested data structures
 
 ### US-009: Add input validation helpers
 **Description:** As a developer, I need input validation helpers so I can ensure data integrity.
